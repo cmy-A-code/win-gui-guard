@@ -132,6 +132,13 @@ function Get-GuardState {
     return $state
 }
 
+function Write-ActionLog([string]$Tag, [string]$Message) {
+    try {
+        $p = Get-GuardPaths
+        "$(Get-Date -Format 'HH:mm:ss.fff') [$Tag] $Message" | Add-Content -Path $p.Log -Encoding UTF8
+    } catch { }
+}
+
 function Start-Guard {
     param([int]$Minutes = 120, [string]$Tag = 'session', [int]$CooldownMs = 5000, [int]$TimeoutSec = 15)
     Ensure-GuardHome
@@ -139,6 +146,10 @@ function Start-Guard {
 
     if (Test-Path $p.Flag) {
         throw "Cannot arm: a stop flag exists ($($p.Flag)). Clear it after confirming automation is fully stopped."
+    }
+    $existing = Test-GuardProcessAlive $p.PidFile
+    if ($existing) {
+        throw "Cannot arm: a guard is already running (pid $existing). Disarm it first (disarm.ps1 -Confirm)."
     }
 
     Remove-Item $p.PidFile -Force -ErrorAction SilentlyContinue
@@ -182,6 +193,7 @@ function Invoke-Guarded {
     }
 
     $auto = $p.AutoPids
+    Write-ActionLog $Tag "RUN pid=$PID cmd=$Command"
     Add-Content -Path $auto -Value $PID -Encoding ASCII
     $exit = 0
     try {
@@ -195,6 +207,7 @@ function Invoke-Guarded {
             else { Remove-Item $auto -Force -ErrorAction SilentlyContinue }
         }
     }
+    Write-ActionLog $Tag "DONE exit=$exit"
 
     if (Test-Path $p.Flag) {
         throw "POST-CHECK [$Tag]: stop flag appeared while the action was running - cancel all remaining actions."

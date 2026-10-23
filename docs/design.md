@@ -85,6 +85,21 @@ holds a key file whose hash matches a fingerprint that lives *on the same drive*
 (fail-closed if missing). The check is intentionally not part of this repository — it is
 environment-specific and easy to get wrong. See `docs/usb-key.md` for an outline.
 
+## Known gaps (deliberate)
+
+- **Same-user runtime writes.** Any process running as the same user can edit
+  `approved.spec` / `guard.spec` or replace the guard host. The gate defends against
+  *accidental* and *un-armed* automation, not against local malware with user rights.
+- **15-second heartbeat window.** If an attacker kills the guard and points `guard.pid`
+  at a live process, the gate trusts the heartbeat for up to 15 s. Lower
+  `$script:HeartbeatMaxAgeSec` (e.g. 5) if you need a tighter window.
+- **`-UserConfirmed` is a signal, not a boundary.** It prevents accidental disarming
+  from a generic flow; it cannot authenticate a human.
+- **Process-tree kill is best-effort.** `taskkill /T` runs once per registered PID at
+  stop time; processes spawned after that moment are outside the snapshot.
+- **Single guard per runtime directory.** `Start-Guard` refuses to arm when a guard is
+  already alive; do not run two sessions against the same runtime directory.
+
 ## Runtime layout
 
 ```

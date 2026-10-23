@@ -24,7 +24,7 @@ arm  ->  invoke-guarded (action)  ->  invoke-guarded (action)  ->  ESC  ->  stop
 - **Injection-proof.** Synthetic keystrokes carry the `LLKHF_INJECTED` flag and are ignored, so the automation cannot fire (or fake) its own kill switch.
 - **Fail-closed action gate.** Every action first verifies: no stop flag, guard process alive, heartbeat < 15 s old, guard spec equals the approved spec. Otherwise it aborts with a distinct exit code.
 - **Spec fingerprint.** The guard publishes `guard.spec`; a swapped or downgraded guard produces a mismatch and actions are refused.
-- **PID whitelist on stop.** Only interpreter/automation hosts started *after* the guard are killed — recycled PIDs are never touched.
+- **PID whitelist on stop, process tree included.** Only interpreter/automation hosts started *after* the guard are killed, and each one is killed with `taskkill /T` so its child processes go too — recycled PIDs are never touched.
 - **Audit trail.** `audit.log` (session events) and `guard-actions.log` (per-action tag, PID, exit code).
 - **No UI, no dependencies.** Hidden PowerShell host + one C# file compiled on the fly by `Add-Type`.
 

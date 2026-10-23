@@ -60,7 +60,7 @@ public class PanicGuard
     private static LowLevelKeyboardProc kbProc;
     private static string flagPath, pidPath, logPath, tag, hbPath, specPath;
     private static System.Windows.Forms.Timer idleTimer;
-    private static bool testMode = false, fired = false;
+    private static bool testMode = false;
     private static int cooldownMs = 5000;
     private static uint lastFireMs = 0;
     private static DateTime guardStart;
@@ -113,7 +113,7 @@ public class PanicGuard
 
     private static IntPtr KbHook(int nCode, IntPtr wParam, IntPtr lParam)
     {
-        if (nCode >= 0 && !fired)
+        if (nCode >= 0)
         {
             int msg = wParam.ToInt32();
             // WM_KEYDOWN only: SYSKEYDOWN (Alt+ESC) is intentionally ignored so the
@@ -193,8 +193,21 @@ public class PanicGuard
                         Log("skip pid " + pid + " (" + n + ", nameOk=" + nameOk + ", timeOk=" + timeOk + ") - stale or unrelated, refusing to kill");
                         continue;
                     }
-                    p.Kill();
-                    Log("killed pid " + pid + " (" + p.ProcessName + ")");
+                    // Kill the whole process tree: the registered PID is usually an
+                    // interpreter and the real automation runs in a child process.
+                    try
+                    {
+                        ProcessStartInfo psi = new ProcessStartInfo("taskkill", "/PID " + pid + " /T /F");
+                        psi.CreateNoWindow = true;
+                        psi.UseShellExecute = false;
+                        using (Process tk = Process.Start(psi))
+                        {
+                            tk.WaitForExit(3000);
+                        }
+                    }
+                    catch (Exception te) { Log("taskkill " + pid + " failed: " + te.Message); }
+                    try { if (!p.HasExited) { p.Kill(); } } catch { }
+                    Log("killed pid " + pid + " tree (" + p.ProcessName + ")");
                 }
                 catch (Exception e) { Log("kill " + pid + " failed: " + e.Message); }
             }

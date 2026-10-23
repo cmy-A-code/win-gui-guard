@@ -38,6 +38,14 @@
 
 运行时目录默认 `.\runtime`，可用 `$env:WIN_GUI_GUARD_HOME` 改。
 
+## 与现有工具的关系
+
+这是一层**治理层**，不是输入库。用在你已经在用的桌面自动化库外面：
+
+- **pyautogui / pynput / AutoHotkey** —— 输入原语。pyautogui 的 `FAILSAFE`（鼠标移到屏幕角落）是在**调用方进程内**抛异常，进程卡死、被替换、或执行了 `pyautogui.FAILSAFE = False` 就失效；win-gui-guard 跑在独立进程里，看的是真实键盘，从外面拒绝动作。
+- **pywinauto / UIAutomation / Playwright** —— UI 驱动。它们没有「操作者现在就要停」的概念，用 `Invoke-Guarded` 包起来。
+- **定时哨兵 / watchdog** —— 互补：它们保证进程活着，闸门负责让它停下来。
+
 ## 设计
 
 - **构造上 fail-closed**：文件缺失、心跳不可读、进程死亡——每一种都意味着中止，绝不放行。

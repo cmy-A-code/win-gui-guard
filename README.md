@@ -99,6 +99,21 @@ All state lives in plain files so every layer can be inspected, tested and audit
 independently: `guard.pid`, `guard.heartbeat`, `guard.spec`, `approved.spec`,
 `STOP.flag`, `automation_pids.txt`, `audit.log`, `guard-actions.log`.
 
+## Relationship to existing tools
+
+This is a **governance layer**, not an input library. Use it *around* the tools you
+already drive the desktop with:
+
+- **pyautogui / pynput / AutoHotkey** — input primitives. pyautogui's `FAILSAFE`
+  (move the mouse to a screen corner) raises an exception *inside the calling
+  process*; it disappears when the process is stuck, replaced, or when someone sets
+  `pyautogui.FAILSAFE = False`. win-gui-guard runs in its own process, watches the
+  real keyboard, and refuses actions from the outside.
+- **pywinauto / UIAutomation / Playwright** — UI drivers. They have no notion of
+  "the operator wants out right now"; wrap `Invoke-Guarded` around them.
+- **Scheduled sentinels / watchdogs** — complementary; they keep processes alive,
+  the guard stops them.
+
 ## Design notes
 
 - **Fail-closed by construction.** Missing file, unreadable heartbeat, dead PID — every one of them means *abort*, never *allow*.

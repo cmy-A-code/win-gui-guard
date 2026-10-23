@@ -1,0 +1,17 @@
+# runtime state (created by arm.ps1)
+runtime/
+STOP.flag*
+STOP.selftest
+approved.spec
+guard.pid
+guard.heartbeat
+guard.spec
+automation_pids.txt
+*.log
+done_notice_*.txt
+
+# build output
+bin/
+obj/
+*.dll
+*.pdb
